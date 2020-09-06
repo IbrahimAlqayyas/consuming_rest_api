@@ -1,48 +1,42 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:rest_api_trainning/models/api_response.dart';
-import 'package:rest_api_trainning/models/note_for_listing.dart';
-import 'package:rest_api_trainning/services/notes_service.dart';
-import 'package:rest_api_trainning/views/note_create_modify.dart';
+import 'package:rest_api_training/models/api_response.dart';
+import 'package:rest_api_training/models/note_for_listing.dart';
+import 'package:rest_api_training/services/notes_service.dart';
+import 'package:rest_api_training/views/note_create_modify.dart';
 import 'note_delete.dart';
 
-class NoteList extends StatefulWidget{
-
+class NoteList extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
     // TODO: implement createState
     return _NoteListState();
   }
-
 }
 
 class _NoteListState extends State<NoteList> {
-
   // final service = NotesService(); // bad idea .. use service locator GetIT
-
   /// read the properties of the object NotesService (access the class)
   //var service = GetIt.instance.get<NotesService>();
   NotesService get service => GetIt.instance<NotesService>();
-
   APIResponse<List<NoteForListing>> _apiResponse;
   bool _isLoading = false;
 
-
   // a method to format the date and time
-  String formatDateTime(DateTime dateTime){
+  String formatDateTime(DateTime dateTime) {
     return '${dateTime.day} / ${dateTime.month} /${dateTime.year}';
   }
 
-
-
+  /////////////////// init Method ///////////////////
   @override
   void initState() {
     _fetchNotes();
     super.initState();
   }
 
-  _fetchNotes () async {
+  /////////////////// fetchNotes Method ///////////////////
+  _fetchNotes() async {
     setState(() {
       _isLoading = true;
     });
@@ -50,38 +44,39 @@ class _NoteListState extends State<NoteList> {
     setState(() {
       _isLoading = false;
     });
-
   }
 
+  /////////////////// build Method ///////////////////
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Note List'),
-      ),
-      floatingActionButton: FloatingActionButton(
-          child: Icon(Icons.add),
-          onPressed: (){
-            Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => NoteCreateModify()
-                )
-            );
-          }
-      ),
-      body: Builder(
+        appBar: AppBar(
+          title: Text('Note List'),
+        ),
+        floatingActionButton: FloatingActionButton(
+            child: Icon(Icons.add),
+            onPressed: () {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => NoteCreateModify()));
+            }),
+        body: Builder(
           builder: (_) {
             if (_isLoading) {
               return Center(child: CircularProgressIndicator());
             }
 
             if (_apiResponse.error) {
-              return Center(child: Text(_apiResponse.errorMessage),);
+              return Center(
+                child: Text(_apiResponse.errorMessage),
+              );
             }
 
             return ListView.separated(
-              separatorBuilder: (_, __) => Divider(height: 1, color: Colors.green,),
-              itemBuilder: (_, index){
+              separatorBuilder: (_, __) => Divider(
+                height: 1,
+                color: Colors.green,
+              ),
+              itemBuilder: (_, index) {
                 return Dismissible(
                   key: ValueKey(_apiResponse.data[index].noteID),
                   direction: DismissDirection.startToEnd,
@@ -90,26 +85,20 @@ class _NoteListState extends State<NoteList> {
                   },
                   confirmDismiss: (direction) async {
                     final result = await showDialog(
-                        context: context,
-                        builder: (_) => NoteDelete()
-                    );
+                        context: context, builder: (_) => NoteDelete());
                     return result;
                   },
                   child: ListTile(
                     title: Text(
                       _apiResponse.data[index].noteTitle,
-                      style: TextStyle(
-                          color: Theme.of(context).primaryColor
-                      ),
+                      style: TextStyle(color: Theme.of(context).primaryColor),
                     ),
-                    subtitle: Text('Last edited on ${formatDateTime(_apiResponse.data[index].latestEditedDateTime ??
-                        _apiResponse.data[index].createDateTime )}'),
+                    subtitle: Text(
+                        'Last edited on ${formatDateTime(_apiResponse.data[index].latestEditDateTime ?? _apiResponse.data[index].createDateTime)}'),
                     onTap: () {
-                      Navigator.of(context).push(
-                          MaterialPageRoute(
-                              builder: (_) => NoteCreateModify(noteId: _apiResponse.data[index].noteID)
-                          )
-                      );
+                      Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => NoteCreateModify(
+                              noteID: _apiResponse.data[index].noteID)));
                     },
                   ),
                   background: Container(
@@ -126,7 +115,6 @@ class _NoteListState extends State<NoteList> {
               itemCount: _apiResponse.data.length,
             );
           },
-      )
-    );
+        ));
   }
 }

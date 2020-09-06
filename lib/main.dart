@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:rest_api_trainning/services/notes_service.dart';
-import 'package:rest_api_trainning/views/note_list.dart';
+import 'package:rest_api_training/services/notes_service.dart';
+import 'package:rest_api_training/views/note_list.dart';
 
 
-void setupLocator(){
+void serviceLocator(){
   GetIt sl = GetIt.instance;
   // create the service locator
   sl.registerLazySingleton<NotesService>(() => NotesService());
@@ -14,7 +14,7 @@ void setupLocator(){
 
 void main() {
   //calling the service locator
-  setupLocator();
+  serviceLocator();
   runApp(MyApp());
 }
 
