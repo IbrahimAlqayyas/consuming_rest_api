@@ -1,5 +1,5 @@
 <<<<<<< HEAD
-# rest_api_trainning
+# rest_api_training
 
 A new Flutter application.
 
