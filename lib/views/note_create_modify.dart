@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:rest_api_training/models/note.dart';
+import 'package:rest_api_training/models/note_insert_update.dart';
 import 'package:rest_api_training/services/notes_service.dart';
 import 'package:get_it/get_it.dart';
 
-
 class NoteCreateModify extends StatefulWidget {
+
   final String noteID;
-  // a function to make a status of editing
-  // to use in the appBar title and the RaisedButton action
   NoteCreateModify({this.noteID});
 
   @override
@@ -15,7 +14,7 @@ class NoteCreateModify extends StatefulWidget {
 }
 
 class _NoteCreateModifyState extends State<NoteCreateModify> {
-  // Editing or adding new note?
+  // a function to make a status of editing
   bool get isEditing => widget.noteID != null;
 
   // API Service Call
@@ -26,25 +25,30 @@ class _NoteCreateModifyState extends State<NoteCreateModify> {
 
   TextEditingController _titleController = TextEditingController();
   TextEditingController _contentController = TextEditingController();
-  bool _isLoading = false; //to check if getting the note operation is loading or not
+  bool _isLoading =
+      false; //to check if getting the note operation is loading or not
+
   // API call
   @override
   void initState() {
     super.initState();
-    setState(() {
-      _isLoading = true;
-    });
-    notesService.getNote(widget.noteID).then((response){
+    if (isEditing) {
       setState(() {
-        _isLoading = false;
+        _isLoading = true;
       });
-      if(response.error){
-        errorMessage = response.errorMessage ?? 'An error occurred'; // In case of error without an error message
-      }
-      note = response.data;
-      _titleController.text = note.noteTitle;
-      _contentController.text = note.noteContent;
-    });
+      notesService.getNote(widget.noteID).then((response) {
+        setState(() {
+          _isLoading = false;
+        });
+        if (response.error) {
+          errorMessage = response.errorMessage ??
+              'An error occurred'; // In case of error without an error message
+        }
+        note = response.data;
+        _titleController.text = note.noteTitle;
+        _contentController.text = note.noteContent;
+      });
+    }
   }
 
   @override
@@ -56,50 +60,118 @@ class _NoteCreateModifyState extends State<NoteCreateModify> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(12),
-        child: _isLoading ? Center( child: CircularProgressIndicator()) : Column(
-            children: [
-            TextField(
-              controller: _titleController,
-              decoration: InputDecoration(
-                hintText: 'Note Title'
+        child: _isLoading
+            ? Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  /// note title text field
+                  TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(hintText: 'Note Title'),
+                  ),
+
+                  //Spacing between text fields
+                  Container(height: 8),
+
+                  /// note content text field
+                  TextField(
+                    controller: _contentController,
+                    decoration: InputDecoration(hintText: 'Note Content'),
+                  ),
+
+                  Container(height: 16),
+
+                  // to make the button take all the width space
+                  SizedBox(
+                      width: double.infinity,
+                      height: 35,
+                      /// Submit Button
+                      child: RaisedButton(
+                        child: Text(
+                          'Submit',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        color: Theme.of(context).primaryColor,
+                        onPressed: () async {
+                          if (isEditing) {
+                            //update note
+                            setState(() {
+                              _isLoading = true;
+                            });
+
+                            final note = NoteInsertUpdate(
+                                noteTitle: _titleController.text,
+                                noteContent: _contentController.text
+                            );
+                            final result = await notesService.updateNote(note, widget.noteID);
+
+                            setState(() {
+                              _isLoading = true;
+                            });
+
+                            final successMessage = 'Success!';
+                            final text = result.error ? (result.errorMessage ?? 'An error occurred')
+                                : 'Your note was updated!';
+
+                            showDialog(
+                                context: context,
+                                builder: (_) => AlertDialog (
+                                  title: Text(successMessage),
+                                  content: Text(text),
+                                  actions: [
+                                    FlatButton(
+                                        child: Text('OK'),
+                                        onPressed: () => Navigator.of(context).pop()
+                                    )
+                                  ],
+                                )
+                            ).then((data){
+                              if(result.data){
+                                Navigator.of(context).pop();
+                              }
+                            });
+                          } else {
+                            // add new note
+                            setState(() {
+                              _isLoading = true;
+                            });
+
+                            final note = NoteInsertUpdate(
+                              noteTitle: _titleController.text,
+                              noteContent: _contentController.text
+                            );
+                            final result = await notesService.createNote(note);
+
+                            setState(() {
+                              _isLoading = true;
+                            });
+
+                            final successMessage = 'Success!';
+                            final text = result.error ? (result.errorMessage ?? 'An error occurred')
+                                : 'Your note was created!';
+
+                            showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog (
+                                title: Text(successMessage),
+                                content: Text(text),
+                                actions: [
+                                  FlatButton(
+                                    child: Text('OK'),
+                                    onPressed: () => Navigator.of(context).pop()
+                                  )
+                                ],
+                              )
+                            ).then((data){
+                              if(result.data){
+                                Navigator.of(context).pop();
+                              }
+                            });
+                          }
+                        },
+                      ))
+                ],
               ),
-            ),
-
-            //Spacing between text fields
-            Container(height: 8),
-
-            TextField(
-              controller: _contentController,
-              decoration: InputDecoration(
-                  hintText: 'Note Content'
-              ),
-            ),
-
-            Container(height: 16),
-
-            // to make the button take all the width space
-            SizedBox(
-              width: double.infinity,
-              height: 35,
-              child:
-                RaisedButton(
-                  child: Text('Submit', style: TextStyle(color: Colors.white),),
-                  color: Theme.of(context).primaryColor,
-                  onPressed: () {
-                    if (isEditing) {
-                      // update notes in API
-
-                    } else {
-                      // create new note in API
-
-                    }
-
-                    Navigator.of(context).pop();
-                  },
-                )
-            )
-          ],
-        ),
       ),
     );
   }

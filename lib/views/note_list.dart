@@ -31,19 +31,25 @@ class _NoteListState extends State<NoteList> {
   /////////////////// init Method ///////////////////
   @override
   void initState() {
-    _fetchNotes();
+    setState(() {
+      _fetchNotes();
+    });
     super.initState();
   }
 
   /////////////////// fetchNotes Method ///////////////////
   _fetchNotes() async {
+
     setState(() {
-      _isLoading = true;
+      _isLoading = true;  //1
     });
-    _apiResponse = await service.getNotesList();
+
+    _apiResponse = await service.getNotesList();  //2
+
     setState(() {
-      _isLoading = false;
+      _isLoading = false;  //3
     });
+
   }
 
   /////////////////// build Method ///////////////////
@@ -57,7 +63,7 @@ class _NoteListState extends State<NoteList> {
             child: Icon(Icons.add),
             onPressed: () {
               Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => NoteCreateModify()));
+                  .push(MaterialPageRoute(builder: (_) => NoteCreateModify())).then((_) => _fetchNotes()); // .then is working after we comeback from the push
             }),
         body: Builder(
           builder: (_) {
@@ -80,12 +86,37 @@ class _NoteListState extends State<NoteList> {
                 return Dismissible(
                   key: ValueKey(_apiResponse.data[index].noteID),
                   direction: DismissDirection.startToEnd,
-                  onDismissed: (direction) {
-                    ///////////////////// code later
-                  },
+                  onDismissed: (direction) {},
                   confirmDismiss: (direction) async {
                     final result = await showDialog(
                         context: context, builder: (_) => NoteDelete());
+
+                    var message;
+                    if (result) {
+                      final deleteResult = await service.deleteNote(_apiResponse.data[index].noteID);
+                      if (deleteResult != null && deleteResult.data){
+                        message = 'The note was deleted successfully';
+                      } else {
+                        message = deleteResult?.errorMessage ?? 'An error occurred';
+                      }
+
+                      // Show a SnackBar with the deletion successful message
+                      showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog (
+                            title: Text('Success!'),
+                            content: Text(message),
+                            actions: [
+                              FlatButton(
+                                  child: Text('OK'),
+                                  onPressed: () => Navigator.of(context).pop()
+                              )
+                            ],
+                          )
+                      );
+                      return deleteResult?.data ?? false;
+                    }
+                    print(result);
                     return result;
                   },
                   child: ListTile(
@@ -96,9 +127,10 @@ class _NoteListState extends State<NoteList> {
                     subtitle: Text(
                         'Last edited on ${formatDateTime(_apiResponse.data[index].latestEditDateTime ?? _apiResponse.data[index].createDateTime)}'),
                     onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
                           builder: (_) => NoteCreateModify(
-                              noteID: _apiResponse.data[index].noteID)));
+                              noteID: _apiResponse.data[index].noteID))).then((data) => _fetchNotes());
                     },
                   ),
                   background: Container(
